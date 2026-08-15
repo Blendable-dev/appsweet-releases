@@ -1,7 +1,7 @@
 # AppSweet release channels
 
 Static release-channel metadata and update artifacts for AppSweet, served at
-https://appsweet.dev via GitHub Pages.
+https://releases.appsweet.app via GitHub Pages.
 
 - `desktop/<channel>/<target>/latest.json` — Tauri updater manifests
 - `desktop/<channel>/<target>/<version>/` — update archives referenced by the manifests
@@ -12,4 +12,4 @@ Content here is published exclusively by CI in the private product repository
 edited by hand; the signatures inside the manifests are what installed clients trust,
 so this repo's visibility adds no authority — it is a delivery path, not a trust root.
 
-The marketing site lives at https://www.appsweet.dev and is unaffected.
+A dedicated host: the apex appsweet.app is untouched and stays yours to serve however you like.

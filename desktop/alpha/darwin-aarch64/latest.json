@@ -1,0 +1,11 @@
+{
+  "version": "0.1.0-alpha.6",
+  "notes": "Alpha build 0.1.0-alpha.6 of main commit f8eb021f856a694104c266729ddebd823d852cca.\n\nUnreviewed development snapshot for alpha testers; it updates through the alpha channel only and never advances the beta channel.",
+  "pub_date": "2026-08-15T21:20:30+02:00",
+  "platforms": {
+    "darwin-aarch64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSVDMzNWFrTjcybllqK1Fhb05LY1hjLzJMb09LUGpOK09yYnBxRUo4aWxEdWRtZjZXQ0VXdWpQZTRSbVRrOVFPNVV0Sm03OWRrTWlJTzB5TFh2Si92TVJvVWZHMm1PYlFnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg2ODIxOTU0CWZpbGU6QXBwU3dlZXQuYXBwLnRhci5negpmVFc4dW92QkRkVDQrUk5KMk9HWDE3ckhYdHJUOEdUbHJYZnhMZjQxN3d5VTczSW43L3pBU1VZdENkK0EvQWR5VDRRblNrUXIxRExFWURpZ1BzOE5DQT09Cg==",
+      "url": "https://releases.appsweet.app/desktop/alpha/darwin-aarch64/0.1.0-alpha.6/AppSweet.app.tar.gz"
+    }
+  }
+}

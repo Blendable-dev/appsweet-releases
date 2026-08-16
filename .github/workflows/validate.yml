@@ -1,0 +1,34 @@
+name: Validate channel
+
+# Every commit to the channel must be a valid, fully signed channel tree.
+# The validator is vendored into .github/channel-tools/ by the publish
+# script in the product repo, so this repo always validates with the
+# exact tooling version that published its content.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+        with:
+          cosign-release: v3.0.6
+
+      - name: Validate the channel tree against the vendored contract
+        run: |
+          validator=.github/channel-tools/tools/release/channel-tree-contract.mjs
+          if [[ ! -f "$validator" ]]; then
+            echo "no publication yet: vendored tooling absent, nothing to validate"
+            exit 0
+          fi
+          node "$validator" --cosign .

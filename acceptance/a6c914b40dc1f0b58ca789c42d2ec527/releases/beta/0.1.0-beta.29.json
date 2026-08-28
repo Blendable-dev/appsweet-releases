@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "channel": "beta",
+  "version": "0.1.0-beta.29",
+  "tag": "backend-v0.1.0-beta.29",
+  "publishedAt": "2026-08-28T14:33:41+02:00",
+  "releaseReadiness": "self-host-candidate",
+  "deploymentDefinitionSha256": "e19ad69bdbbcdea1592519b92ff88ecd840a17c38fcc5d979244600aab2e9ce1",
+  "releaseManifest": {
+    "url": "https://github.com/Blendable-dev/local-app-sweet/releases/download/backend-v0.1.0-beta.29/release.json",
+    "sha256": "506497ccc4f669dd59b8078fa8b9ae7bcabe77f2252a07618f13788a034f4017"
+  },
+  "signingKeyId": "sha256:1552d0983f559e84edc86c113f1e472ba90ed11a77004531387aa1b39ed69a61",
+  "revocations": {
+    "url": "https://releases.appsweet.app/acceptance/a6c914b40dc1f0b58ca789c42d2ec527/releases/revoked-key-ids.txt",
+    "sha256": "5996a2da8ba627ad43fe625d2685cc4f59ac9e5e4c9688bfcdf72b5bebef3f9f"
+  }
+}

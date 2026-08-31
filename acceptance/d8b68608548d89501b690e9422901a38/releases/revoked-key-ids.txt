@@ -1,0 +1,2 @@
+# One revoked release-signing key ID per line, in sha256:<64 lowercase hex> form.
+# Keep this reviewed policy file even when no key IDs are revoked.

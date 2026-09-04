@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "channels": {
+    "beta": {
+      "latest": "0.1.0-beta.33",
+      "versions": [
+        {
+          "version": "0.1.0-beta.33",
+          "channel": "beta",
+          "publishedAt": "2026-09-04T18:07:17+02:00",
+          "manifestUrl": "https://releases.appsweet.app/acceptance/8bc2edf2d5de7ec48b96a70d3b43c771/releases/beta/0.1.0-beta.33.json",
+          "manifestSha256": "dd307aa0dd7070c5e20d1ea5d1e3c497e37e4fda8c1f0dac1bdf3220abede4f2",
+          "minimumUpgradeFrom": "0.1.0-beta.1"
+        }
+      ]
+    }
+  }
+}

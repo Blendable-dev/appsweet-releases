@@ -1,0 +1,10 @@
+# Retained desktop updater public keys, append-only, one minisign public
+# key per line. The first entry is the current key and MUST equal
+# plugins.updater.pubkey in the desktop tauri.conf.json (asserted by
+# publish-channel.test.mjs). Rotating the updater key means updating the
+# Tauri config AND appending the retired key here, in the same reviewed
+# change: historical archives are immutable and stay valid under the key
+# that signed them, so channel validation verifies each archive against
+# the key its signature names from this reviewed set — never against a
+# key list carried in the public channel repository.
+dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDlERjZERTkwNUE3RURGNTMKUldSVDMzNWFrTjcybmU2d1Z0M1d4MmJXdUhqMUNRVGlkUUM5RGtMYXJYWDF2L3VraTlFV3VsYU8K

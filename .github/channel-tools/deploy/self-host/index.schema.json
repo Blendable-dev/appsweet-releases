@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://appsweet.app/schemas/channel-index-v1.json",
+  "title": "AppSweet release channel index",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "channels"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "channels": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["beta"],
+      "properties": {
+        "beta": { "$ref": "#/$defs/channel" }
+      }
+    }
+  },
+  "$defs": {
+    "prereleaseSemver": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*$"
+    },
+    "semver": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "channel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["latest", "versions"],
+      "properties": {
+        "latest": { "$ref": "#/$defs/prereleaseSemver" },
+        "versions": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/version" }
+        }
+      }
+    },
+    "version": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "channel", "publishedAt", "manifestUrl", "manifestSha256"],
+      "properties": {
+        "version": { "$ref": "#/$defs/prereleaseSemver" },
+        "channel": { "enum": ["beta"] },
+        "publishedAt": { "type": "string", "format": "date-time" },
+        "manifestUrl": {
+          "type": "string",
+          "pattern": "^https://releases\\.appsweet\\.app/releases/beta/[0-9]+\\.[0-9]+\\.[0-9]+-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*\\.json$"
+        },
+        "manifestSha256": { "$ref": "#/$defs/sha256" },
+        "minimumUpgradeFrom": { "$ref": "#/$defs/semver" }
+      }
+    }
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://appsweet.app/schemas/desktop-beta-channel-v1.json",
+  "title": "AppSweet desktop beta update manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "notes", "pub_date", "platforms"],
+  "properties": {
+    "version": {
+      "title": "Semantic version of the offered release, without a leading v",
+      "type": "string",
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*$"
+    },
+    "notes": {
+      "title": "Deterministic release notes shown in the update overlay",
+      "type": "string",
+      "pattern": "^[\\s\\S]{1,8192}$"
+    },
+    "pub_date": {
+      "title": "RFC 3339 publication timestamp",
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})$"
+    },
+    "platforms": {
+      "title": "Apple Silicon only; any other key is a packaging mistake, not an extension point",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["darwin-aarch64"],
+      "properties": {
+        "darwin-aarch64": { "$ref": "#/$defs/platformEntry" }
+      }
+    }
+  },
+  "$defs": {
+    "platformEntry": {
+      "title": "One downloadable, signed updater package",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["signature", "url"],
+      "properties": {
+        "signature": {
+          "title": "Detached updater signature verified against the embedded public key",
+          "type": "string",
+          "pattern": "^[\\s\\S]+$"
+        },
+        "url": {
+          "title": "Immutable versioned HTTPS URL of the updater package",
+          "type": "string",
+          "pattern": "^https://[^\\s?#]+/AppSweet\\.app\\.tar\\.gz$"
+        }
+      }
+    }
+  }
+}

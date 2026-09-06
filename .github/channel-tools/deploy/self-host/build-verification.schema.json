@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://appsweet.app/schemas/build-verification-v1.json",
+  "title": "AppSweet immutable build publication verification",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "version",
+    "commitSha",
+    "releaseManifestSha256",
+    "signingKeyId",
+    "buildWorkflow",
+    "checks",
+    "scope",
+    "liveAcceptance"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "version": {
+      "type": "string"
+    },
+    "commitSha": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$"
+    },
+    "releaseManifestSha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "signingKeyId": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "buildWorkflow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "identity",
+        "runId",
+        "runNumber",
+        "url"
+      ],
+      "properties": {
+        "identity": {
+          "type": "string"
+        },
+        "runId": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        },
+        "runNumber": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "url": {
+          "type": "string"
+        }
+      }
+    },
+    "checks": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "releaseContracts",
+        "initializerCapability",
+        "anonymousAssets",
+        "anonymousImages",
+        "signaturesAndInventory"
+      ],
+      "properties": {
+        "releaseContracts": {
+          "const": "passed"
+        },
+        "initializerCapability": {
+          "const": "passed"
+        },
+        "anonymousAssets": {
+          "const": "passed"
+        },
+        "anonymousImages": {
+          "const": "passed"
+        },
+        "signaturesAndInventory": {
+          "const": "passed"
+        }
+      }
+    },
+    "scope": {
+      "const": "publication-verification"
+    },
+    "liveAcceptance": {
+      "const": "not-recorded"
+    }
+  }
+}

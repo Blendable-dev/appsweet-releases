@@ -1,0 +1,389 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://appsweet.app/schemas/self-host-build-v2.json",
+  "title": "AppSweet immutable installable backend build",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "release",
+    "api",
+    "images",
+    "signing",
+    "artifacts",
+    "compatibility",
+    "deploymentDefinitionSha256"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 2
+    },
+    "deploymentDefinitionSha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "release": {
+      "$ref": "#/$defs/release"
+    },
+    "desktop": {
+      "$ref": "#/$defs/desktop"
+    },
+    "api": {
+      "$ref": "#/$defs/api"
+    },
+    "images": {
+      "$ref": "#/$defs/images"
+    },
+    "signing": {
+      "$ref": "#/$defs/signing"
+    },
+    "artifacts": {
+      "$ref": "#/$defs/artifacts"
+    },
+    "compatibility": {
+      "$ref": "#/$defs/compatibility"
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "semver": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$"
+    },
+    "release": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "tag",
+        "commitSha",
+        "publishedAt",
+        "channel",
+        "readiness"
+      ],
+      "properties": {
+        "version": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)-build\\.[1-9][0-9]*$"
+        },
+        "tag": {
+          "type": "string",
+          "pattern": "^backend-v[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$"
+        },
+        "commitSha": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "publishedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "channel": {
+          "const": "build"
+        },
+        "readiness": {
+          "const": "self-host-candidate"
+        }
+      }
+    },
+    "api": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "server",
+        "minimumClient",
+        "recommendedClient"
+      ],
+      "properties": {
+        "server": {
+          "$ref": "#/$defs/semver"
+        },
+        "minimumClient": {
+          "$ref": "#/$defs/semver"
+        },
+        "recommendedClient": {
+          "$ref": "#/$defs/semver"
+        }
+      }
+    },
+    "desktop": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "architecture",
+        "downloadUrl"
+      ],
+      "properties": {
+        "version": {
+          "$ref": "#/$defs/semver"
+        },
+        "architecture": {
+          "const": "aarch64"
+        },
+        "downloadUrl": {
+          "type": "string"
+        }
+      }
+    },
+    "backendImage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reference",
+        "digest",
+        "platforms"
+      ],
+      "properties": {
+        "reference": {
+          "type": "string",
+          "pattern": "^ghcr\\.io/blendable-dev/appsweet-backend:[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?@sha256:[a-f0-9]{64}$"
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "platforms": {
+          "type": "array",
+          "uniqueItems": true,
+          "minItems": 2,
+          "items": {
+            "enum": [
+              "linux/amd64",
+              "linux/arm64"
+            ]
+          },
+          "allOf": [
+            {
+              "contains": {
+                "const": "linux/amd64"
+              }
+            },
+            {
+              "contains": {
+                "const": "linux/arm64"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "dependencyImage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reference",
+        "digest",
+        "platforms"
+      ],
+      "properties": {
+        "reference": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9./_-]+:[A-Za-z0-9._-]+@sha256:[a-f0-9]{64}$"
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "platforms": {
+          "type": "array",
+          "uniqueItems": true,
+          "minItems": 2,
+          "items": {
+            "enum": [
+              "linux/amd64",
+              "linux/arm64"
+            ]
+          },
+          "allOf": [
+            {
+              "contains": {
+                "const": "linux/amd64"
+              }
+            },
+            {
+              "contains": {
+                "const": "linux/arm64"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "images": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "backend"
+      ],
+      "properties": {
+        "backend": {
+          "$ref": "#/$defs/backendImage"
+        },
+        "postgres": {
+          "$ref": "#/$defs/dependencyImage"
+        },
+        "zitadel": {
+          "$ref": "#/$defs/dependencyImage"
+        },
+        "zitadelLogin": {
+          "$ref": "#/$defs/dependencyImage"
+        },
+        "garage": {
+          "$ref": "#/$defs/dependencyImage"
+        },
+        "caddy": {
+          "$ref": "#/$defs/dependencyImage"
+        }
+      }
+    },
+    "signing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scheme",
+        "keyId",
+        "publicKey",
+        "transparencyLog"
+      ],
+      "properties": {
+        "scheme": {
+          "const": "cosign-key"
+        },
+        "keyId": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "publicKey": {
+          "$ref": "#/$defs/releaseArtifact"
+        },
+        "transparencyLog": {
+          "const": false
+        }
+      }
+    },
+    "releaseArtifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "file",
+        "sha256"
+      ],
+      "properties": {
+        "file": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "backendArchive",
+        "sbom",
+        "provenance",
+        "checksums",
+        "notices",
+        "changelog",
+        "releaseNotes"
+      ],
+      "properties": {
+        "backendArchive": {
+          "$ref": "#/$defs/releaseArtifact"
+        },
+        "deploymentBundle": {
+          "$ref": "#/$defs/releaseArtifact"
+        },
+        "installerBootstrap": {
+          "$ref": "#/$defs/releaseArtifact"
+        },
+        "sbom": {
+          "$ref": "#/$defs/releaseArtifact"
+        },
+        "provenance": {
+          "$ref": "#/$defs/releaseArtifact"
+        },
+        "checksums": {
+          "$ref": "#/$defs/releaseArtifact"
+        },
+        "notices": {
+          "$ref": "#/$defs/releaseArtifact"
+        },
+        "migrationUtility": {
+          "$ref": "#/$defs/releaseArtifact"
+        },
+        "configurationUtility": {
+          "$ref": "#/$defs/releaseArtifact"
+        },
+        "verificationUtility": {
+          "$ref": "#/$defs/releaseArtifact"
+        },
+        "setupUtility": {
+          "$ref": "#/$defs/releaseArtifact"
+        },
+        "changelog": {
+          "$ref": "#/$defs/releaseArtifact"
+        },
+        "releaseNotes": {
+          "$ref": "#/$defs/releaseArtifact"
+        }
+      }
+    },
+    "compatibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "minimumUpgradeFrom"
+      ],
+      "properties": {
+        "minimumUpgradeFrom": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)-build\\.[1-9][0-9]*$"
+        },
+        "runtime": {
+          "$ref": "#/$defs/runtimeCompatibility"
+        }
+      }
+    },
+    "runtimeCompatibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dockerEngine",
+        "composeMajor",
+        "dokploy"
+      ],
+      "properties": {
+        "dockerEngine": {
+          "$ref": "#/$defs/semver"
+        },
+        "composeMajor": {
+          "type": "integer"
+        },
+        "dokploy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "minimum",
+            "tested"
+          ],
+          "properties": {
+            "minimum": {
+              "$ref": "#/$defs/semver"
+            },
+            "tested": {
+              "$ref": "#/$defs/semver"
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -284,6 +284,10 @@ export function validateReleaseManifest(value) {
     );
   }
 
+  if (value.artifacts?.dokployBootstrap && value.artifacts.dokployBootstrap.file !== `appsweet-dokploy-bootstrap-${version}.json`) {
+    errors.push("Dokploy bootstrap file must be bound to the release version");
+  }
+
   const deploymentArtifacts = {
     deploymentBundle: `appsweet-self-host-${version}.tar.gz`,
     installerBootstrap: `appsweet-install-${version}.sh`,

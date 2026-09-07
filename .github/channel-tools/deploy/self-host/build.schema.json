@@ -301,6 +301,9 @@
         "deploymentBundle": {
           "$ref": "#/$defs/releaseArtifact"
         },
+        "dokployBootstrap": {
+          "$ref": "#/$defs/releaseArtifact"
+        },
         "installerBootstrap": {
           "$ref": "#/$defs/releaseArtifact"
         },

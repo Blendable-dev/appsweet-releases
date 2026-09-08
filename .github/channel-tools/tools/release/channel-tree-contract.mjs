@@ -4,17 +4,7 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { validateBackendChannelDescriptor } from "./backend-channel-contract.mjs";
 import { validateChannelIndex } from "./channel-index-contract.mjs";
-import {
-  UPDATER_ARTIFACT,
-  UPDATE_CHANNELS,
-  validateChannelManifest,
-} from "./desktop/beta-channel-contract.mjs";
-import {
-  decodeMinisignPublicKey,
-  decodeMinisignSignature,
-  verifyUpdaterSignature,
-} from "./desktop/verify-updater-signature.mjs";
-
+import { validateDesktopTree } from "./desktop/channel-tree.mjs";
 /** The public keys installed clients have verified updates with — an
  * append-only set, because historical archives are immutable and stay
  * valid under the key that signed them even after a rotation. Resolution:
@@ -42,45 +32,9 @@ async function resolveUpdaterPublicKeys() {
   return key ? [key] : [];
 }
 
-/** Verify an archive against the key set: the signature names its key id,
- * and the archive must verify under that exact key. */
-function verifyArchiveAgainstKeySet({ packageBytes, signatureFile, keys }) {
-  let signatureKeyId;
-  try {
-    signatureKeyId = decodeMinisignSignature(signatureFile).keyId;
-  } catch (error) {
-    return { valid: false, errors: [error.message] };
-  }
-  for (const key of keys) {
-    let keyId;
-    try {
-      keyId = decodeMinisignPublicKey(key).keyId;
-    } catch (error) {
-      return { valid: false, errors: [`updater key set entry: ${error.message}`] };
-    }
-    if (keyId.equals(signatureKeyId)) {
-      return verifyUpdaterSignature({
-        packageBytes,
-        signatureFile,
-        publicKeyField: key,
-      });
-    }
-  }
-  return {
-    valid: false,
-    errors: [
-      `signed by updater key id ${signatureKeyId.toString("hex")}, which is not in the retained key set`,
-    ],
-  };
-}
-
 import { validateBuildVerification } from "./build-verification-contract.mjs";
-
 const revocationLinePattern = /^sha256:[a-f0-9]{64}$/;
-
-function sha256Hex(bytes) {
-  return createHash("sha256").update(bytes).digest("hex");
-}
+function sha256Hex(bytes) { return createHash("sha256").update(bytes).digest("hex"); }
 
 async function readIfPresent(path) {
   try {
@@ -345,132 +299,9 @@ export async function validateChannelTree(
   }
   }
 
-  // Desktop channels: every latest.json must satisfy the updater contract,
-  // point at content this tree actually serves, and every versioned
-  // directory must carry the package together with its detached signature.
-  const desktopDir = join(root, "desktop");
-  let desktopChannels = [];
   try {
-    desktopChannels = await readdir(desktopDir);
-  } catch (error) {
-    if (error.code !== "ENOENT") throw error;
-  }
-  if (desktopChannels.length > 0 && updaterPublicKeys === undefined) {
-    updaterPublicKeys = await resolveUpdaterPublicKeys();
-  }
-  if (desktopChannels.length > 0 && !updaterPublicKeys?.length) {
-    errors.push(
-      "desktop content exists but no updater public key is available to verify it",
-    );
-    desktopChannels = [];
-  }
-  for (const channel of desktopChannels) {
-    if (!UPDATE_CHANNELS.has(channel)) {
-      errors.push(`desktop/${channel} is not a supported update channel`);
-      continue;
-    }
-    for (const target of await readdir(join(desktopDir, channel))) {
-      const targetDir = join(desktopDir, channel, target);
-      if (!(await stat(targetDir)).isDirectory()) {
-        errors.push(`desktop/${channel}/${target} must be a platform directory`);
-        continue;
-      }
-      const prefix = `desktop/${channel}/${target}`;
-      const latestBytes = await readIfPresent(join(targetDir, "latest.json"));
-      if (!latestBytes) {
-        errors.push(`${prefix}/latest.json must exist`);
-        continue;
-      }
-      let manifest;
-      try {
-        manifest = JSON.parse(latestBytes.toString("utf8"));
-      } catch {
-        errors.push(`${prefix}/latest.json must be JSON`);
-        continue;
-      }
-      const result = validateChannelManifest(manifest, channel);
-      if (!result.valid) {
-        errors.push(...result.errors.map((e) => `${prefix}/latest.json: ${e}`));
-        continue;
-      }
-      const entry = manifest.platforms[target];
-      if (!entry) {
-        errors.push(`${prefix}/latest.json does not offer the ${target} platform`);
-        continue;
-      }
-      const servedUrl = `https://releases.appsweet.app/${prefix}/${manifest.version}/${UPDATER_ARTIFACT}`;
-      if (entry.url !== servedUrl) {
-        errors.push(
-          `${prefix}/latest.json must point at the tree's own artifact path ${servedUrl}`,
-        );
-      }
-      for (const name of await readdir(targetDir)) {
-        if (name === "latest.json") continue;
-        const versionDir = join(targetDir, name);
-        if (!(await stat(versionDir)).isDirectory()) {
-          errors.push(`${prefix}/${name} is not a versioned artifact directory`);
-          continue;
-        }
-        // A version directory carries exactly the package and its detached
-        // signature; anything else would be served publicly by Pages.
-        for (const entry of await readdir(versionDir)) {
-          if (entry !== UPDATER_ARTIFACT && entry !== `${UPDATER_ARTIFACT}.sig`) {
-            errors.push(
-              `${prefix}/${name}/${entry} is not part of the published layout`,
-            );
-          }
-        }
-        const packageBytes = await readIfPresent(
-          join(versionDir, UPDATER_ARTIFACT),
-        );
-        const signatureBytes = await readIfPresent(
-          join(versionDir, `${UPDATER_ARTIFACT}.sig`),
-        );
-        for (const [artifact, bytes] of [
-          [UPDATER_ARTIFACT, packageBytes],
-          [`${UPDATER_ARTIFACT}.sig`, signatureBytes],
-        ]) {
-          if (!bytes || bytes.length === 0) {
-            errors.push(`${prefix}/${name}/${artifact} is missing or empty`);
-          }
-        }
-        if (packageBytes?.length && signatureBytes?.length) {
-          // Presence is not integrity: a corrupted historical archive would
-          // otherwise validate here and be rejected by every installed
-          // client. This is the same check the client performs.
-          const verdict = verifyArchiveAgainstKeySet({
-            packageBytes,
-            signatureFile: signatureBytes.toString("utf8"),
-            keys: updaterPublicKeys,
-          });
-          if (!verdict.valid) {
-            errors.push(
-              ...verdict.errors.map((e) => `${prefix}/${name}: ${e}`),
-            );
-          }
-        }
-      }
-      const offered = await readIfPresent(
-        join(targetDir, manifest.version, UPDATER_ARTIFACT),
-      );
-      if (!offered) {
-        errors.push(
-          `${prefix}/latest.json offers ${manifest.version}, which this tree does not serve`,
-        );
-      }
-      const offeredSignature = await readIfPresent(
-        join(targetDir, manifest.version, `${UPDATER_ARTIFACT}.sig`),
-      );
-      if (
-        offeredSignature &&
-        entry.signature.trim() !== offeredSignature.toString("utf8").trim()
-      ) {
-        errors.push(
-          `${prefix}/latest.json embeds a signature that is not the detached signature of the offered ${manifest.version} package`,
-        );
-      }
-    }
-  }
+    await validateDesktopTree(root, updaterPublicKeys ?? await resolveUpdaterPublicKeys());
+  } catch (error) { errors.push(error.message); }
 
   if (verifyBundle && errors.length === 0) {
     for (const { file, keyId } of bundlesToVerify) {

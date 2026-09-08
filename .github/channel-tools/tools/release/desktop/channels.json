@@ -1,0 +1,6 @@
+{
+  "dev": { "identifier": "dev.blendable.appsweet.dev", "name": "AppSweet Dev", "updater": false },
+  "alpha": { "identifier": "dev.blendable.appsweet.alpha", "name": "AppSweet Alpha", "updater": true },
+  "beta": { "identifier": "dev.blendable.appsweet", "name": "AppSweet Beta", "updater": true },
+  "production": { "identifier": "dev.blendable.appsweet.production", "name": "AppSweet", "updater": true }
+}

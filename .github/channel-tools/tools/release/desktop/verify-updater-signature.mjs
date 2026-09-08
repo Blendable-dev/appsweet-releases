@@ -105,6 +105,23 @@ export function verifyUpdaterSignature({ packageBytes, signatureFile, publicKeyF
       };
 }
 
+/** Match minisign-verify/Tauri's complete four-line signature contract for new candidates. */
+export function verifyCompleteSignature(input) {
+  const result = verifyUpdaterSignature(input);
+  if (!result.valid) return result;
+  try {
+    const lines = Buffer.from(input.signatureFile.trim(), "base64").toString("utf8").trimEnd().split("\n");
+    if (lines.length !== 4 || !lines[0].startsWith("untrusted comment:") || !lines[2].startsWith("trusted comment: ")) throw new Error("incomplete minisign signature");
+    const embedded = decodeMinisignPublicKey(input.publicKeyField);
+    const signature = decodeMinisignSignature(input.signatureFile);
+    const publicKey = createPublicKey({ key: Buffer.concat([ED25519_SPKI_PREFIX, embedded.publicKey]), format: "der", type: "spki" });
+    const global = Buffer.from(lines[3], "base64");
+    const signed = Buffer.concat([signature.signature, Buffer.from(lines[2].slice("trusted comment: ".length))]);
+    if (global.length !== 64 || !edVerify(null, signed, publicKey, global)) throw new Error("minisign trusted comment signature mismatch");
+    return { valid: true };
+  } catch (error) { return { valid: false, errors: [error.message] }; }
+}
+
 function parseArgs(argv) {
   const args = {};
   for (let index = 0; index < argv.length; index += 2) {

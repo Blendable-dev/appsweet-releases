@@ -2,8 +2,16 @@
   "schemaVersion": 2,
   "channels": {
     "alpha": {
-      "latest": "0.1.0-build.93",
+      "latest": "0.1.0-build.94",
       "versions": [
+        {
+          "version": "0.1.0-build.94",
+          "channel": "alpha",
+          "publishedAt": "2026-09-09T08:34:09Z",
+          "manifestUrl": "https://releases.appsweet.app/releases/alpha/0.1.0-build.94.json",
+          "manifestSha256": "83dc0bbfa3bd038c7d07637ad8129d652dd60ebab1bc6e4be0b1e930318ca3be",
+          "minimumUpgradeFrom": "0.1.0-build.1"
+        },
         {
           "version": "0.1.0-build.93",
           "channel": "alpha",

@@ -105,8 +105,13 @@ export function validateCandidate(candidate) {
   return candidate;
 }
 
-/** API and cache check independent of product release age or membership. */
-export function compatibility(requirements, backend, cacheSchema, cacheFormat) {
+/**
+ * API and cache check independent of product release age or membership. `cacheFormats` is the
+ * installed build's accepted declared formats (its own marker, plus its predecessor's from the
+ * bridge onwards); a single string is the strict pre-bridge updater, which compares exactly.
+ */
+export function compatibility(requirements, backend, cacheSchema, cacheFormats) {
+  const accepted = Array.isArray(cacheFormats) ? cacheFormats : [cacheFormats];
   if (!backend) return "unknown";
   try {
     capabilities(backend.capabilities);
@@ -115,7 +120,7 @@ export function compatibility(requirements, backend, cacheSchema, cacheFormat) {
     if (compareApi(requirements.clientApiVersion, backend.serverApiVersion) > 0
       || compareApi(requirements.minimumServerApiVersion, backend.serverApiVersion) > 0
       || requirements.capabilities.some((c) => !backend.capabilities.includes(c))) return "backend-update-required";
-    if (cacheFormat !== requirements.cacheFormat || !Number.isSafeInteger(cacheSchema) || cacheSchema < requirements.cacheReadMin
+    if (!accepted.includes(requirements.cacheFormat) || !Number.isSafeInteger(cacheSchema) || cacheSchema < requirements.cacheReadMin
       || cacheSchema > requirements.cacheReadMax || requirements.cacheWrite < cacheSchema) return "unsafe-cache-transition";
     return "compatible";
   } catch {
@@ -124,7 +129,7 @@ export function compatibility(requirements, backend, cacheSchema, cacheFormat) {
 }
 
 /** Candidates must already belong to authenticated same-channel history. No network/cache of trust here. */
-export function selectCompatibleCandidate({ candidates, channel, installedVersion, selectedOrigin, backend, cacheSchema, cacheFormat, now }) {
+export function selectCompatibleCandidate({ candidates, channel, installedVersion, selectedOrigin, backend, cacheSchema, cacheFormats, cacheFormat = cacheFormats, now }) {
   requireValue(variants.includes(channel), "no distribution channel");
   requireValue(Number.isFinite(now), "invalid current time");
   parseCandidateVersion(installedVersion);
@@ -165,6 +170,6 @@ export function desktopReleaseInput(path) {
     || /^\.github\/workflows\/desktop-/.test(path)
     || /^tools\/(build-mac-app|release\/desktop-release-contract)/.test(path)
     || ["Cargo.toml", "Cargo.lock", "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", ".npmrc", "rust-toolchain.toml",
-      "tools/release/license-policy.json", "tools/release/keys/updater-public-keys.txt", "tools/release/publish-channel.mjs", "tools/release/channel-tree-contract.mjs"].includes(path)
+      "tools/release/license-policy.json", "tools/release/keys/updater-public-keys.txt", "tools/release/publish-channel.mjs", "tools/release/channel-tree-contract.mjs", "tools/release/release-notes.mjs"].includes(path)
     || path.startsWith("patches/") || path.startsWith(".cargo/");
 }

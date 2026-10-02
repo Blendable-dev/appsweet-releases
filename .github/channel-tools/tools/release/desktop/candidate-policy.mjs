@@ -56,6 +56,13 @@ function compareApi(a, b) {
   return compareParts(apiVersion(a), apiVersion(b));
 }
 
+/** The candidate contract's capability grammar, shared with the installer pin records. */
+export function isCapabilityList(value) {
+  return Array.isArray(value) && value.length <= 128
+    && value.every((s) => typeof s === "string" && /^[a-z][a-z0-9_.-]{0,99}$/.test(s))
+    && new Set(value).size === value.length;
+}
+
 function capabilities(value) {
   requireValue(Array.isArray(value) && value.length <= 128, "invalid capabilities");
   requireValue(value.every((s) => typeof s === "string" && /^[a-z][a-z0-9_.-]{0,99}$/.test(s)), "invalid capability");

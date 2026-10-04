@@ -332,8 +332,6 @@ export function validateReleaseManifest(value) {
     for (const name of [
       "backend",
       "postgres",
-      "zitadel",
-      "zitadelLogin",
       "garage",
       "caddy",
     ]) {

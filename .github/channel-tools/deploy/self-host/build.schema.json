@@ -225,12 +225,6 @@
         "postgres": {
           "$ref": "#/$defs/dependencyImage"
         },
-        "zitadel": {
-          "$ref": "#/$defs/dependencyImage"
-        },
-        "zitadelLogin": {
-          "$ref": "#/$defs/dependencyImage"
-        },
         "garage": {
           "$ref": "#/$defs/dependencyImage"
         },

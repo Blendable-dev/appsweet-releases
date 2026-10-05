@@ -3,7 +3,7 @@ import { readFile, readdir, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { validateBackendChannelDescriptor } from "./backend-channel-contract.mjs";
-import { validateChannelIndex } from "./channel-index-contract.mjs";
+import { compareSemver, validateChannelIndex } from "./channel-index-contract.mjs";
 import { validateDesktopTree } from "./desktop/channel-tree.mjs";
 /** The public keys installed clients have verified updates with — an
  * append-only set, because historical archives are immutable and stay
@@ -33,6 +33,7 @@ async function resolveUpdaterPublicKeys() {
 }
 
 import { validateBuildVerification } from "./build-verification-contract.mjs";
+import { parseBuildVersion } from "./build-identity.mjs";
 const revocationLinePattern = /^sha256:[a-f0-9]{64}$/;
 function sha256Hex(bytes) { return createHash("sha256").update(bytes).digest("hex"); }
 
@@ -58,6 +59,68 @@ export function parseRevocationList(text) {
     revoked.add(trimmed);
   }
   return { revoked, errors };
+}
+
+/** Each release's Dokploy launcher is served beside the channel manifests, at an immutable
+ * per-version path, so the install guide can show it inline (GitHub release downloads are not
+ * readable cross-origin). The release manifest's hash is enforced when it is staged. */
+export const DOKPLOY_LAUNCHER_DIRECTORY = "dokploy-bootstrap";
+export const dokployLauncherName = (version) => `appsweet-dokploy-bootstrap-${version}.json`;
+
+/** The signed, append-only record of every launcher published: `{schemaVersion: 1, launchers:
+ * [{version, sha256}]}`, newest first. */
+export const DOKPLOY_LAUNCHER_LIST = "launchers.json";
+const launcherListKeys = ["launchers", "schemaVersion"];
+const launcherEntryKeys = ["sha256", "version"];
+const sameKeys = (value, keys) => value !== null && typeof value === "object" && !Array.isArray(value)
+  && Object.keys(value).sort().join() === keys.join();
+
+/** Shape of the launcher list; an empty error list means valid. */
+export function validateDokployLauncherList(value) {
+  if (!sameKeys(value, launcherListKeys)) return ["must be an object with exactly schemaVersion and launchers"];
+  if (value.schemaVersion !== 1) return ["schemaVersion must be 1"];
+  if (!Array.isArray(value.launchers) || value.launchers.length === 0) return ["launchers must be a non-empty array"];
+  const errors = [];
+  for (const entry of value.launchers) {
+    if (!sameKeys(entry, launcherEntryKeys)) {
+      errors.push("each launcher must have exactly version and sha256");
+      continue;
+    }
+    try { parseBuildVersion(entry.version); } catch (error) { errors.push(`${JSON.stringify(entry.version)}: ${error.message}`); }
+    if (typeof entry.sha256 !== "string" || !/^[a-f0-9]{64}$/.test(entry.sha256)) {
+      errors.push(`${JSON.stringify(entry.version)} sha256 must be 64 lowercase hex digits`);
+    }
+  }
+  if (errors.length) return errors;
+  for (let i = 1; i < value.launchers.length; i += 1) {
+    if (compareSemver(value.launchers[i - 1].version, value.launchers[i].version) <= 0) {
+      return ["launchers must be listed once each, in strictly descending version order"];
+    }
+  }
+  return [];
+}
+
+/** A served launcher must be a Compose definition that pins exactly the version its name binds. */
+export function validateDokployLauncher(bytes, version) {
+  let launcher;
+  try {
+    launcher = JSON.parse(bytes.toString("utf8"));
+  } catch {
+    return ["must be JSON"];
+  }
+  const services = launcher?.services;
+  if (!services || typeof services !== "object" || Array.isArray(services)) return ["must be a Compose definition with services"];
+  const pins = Object.values(services).flatMap((service) => {
+    const environment = service?.environment;
+    if (Array.isArray(environment)) {
+      return environment.filter((entry) => typeof entry === "string" && entry.startsWith("APPSWEET_RELEASE_VERSION="))
+        .map((entry) => entry.slice("APPSWEET_RELEASE_VERSION=".length));
+    }
+    return environment && typeof environment === "object" && "APPSWEET_RELEASE_VERSION" in environment
+      ? [environment.APPSWEET_RELEASE_VERSION] : [];
+  });
+  if (pins.length === 0 || pins.some((pin) => pin !== version)) return [`must pin APPSWEET_RELEASE_VERSION to ${version}`];
+  return [];
 }
 
 const channelValidators = Object.fromEntries(["alpha", "beta"].map((channel) =>
@@ -144,6 +207,7 @@ export async function validateChannelTree(
     "index.json.sigstore.json",
     "revoked-key-ids.txt",
     "verification",
+    DOKPLOY_LAUNCHER_DIRECTORY,
     ...Object.keys(index.channels).flatMap((channel) => [
       channel,
       `${channel}.json`,
@@ -292,6 +356,62 @@ export async function validateChannelTree(
       else if (!(await readIfPresent(`${recordPath}.sigstore.json`))) errors.push(`verification/${name} signature is missing`);
       else bundlesToVerify.push({ file: recordPath, keyId: record.signingKeyId });
     } catch (error) { errors.push(`verification/${name}: ${error.message}`); }
+  }
+
+  // Launchers exist only for versions some channel publishes; older releases predate them. The
+  // signed, append-only launcher list records every launcher ever published, so a deleted or
+  // altered launcher — the oldest or the only one included — cannot go unnoticed, and every
+  // indexed version from the oldest listed one on must be listed. It is a separate file because
+  // installed backends parse index entries with closed (deny_unknown_fields) types.
+  const launcherDir = join(releasesDir, DOKPLOY_LAUNCHER_DIRECTORY);
+  const launcherPrefix = `releases/${DOKPLOY_LAUNCHER_DIRECTORY}`;
+  const indexedVersions = new Set(Object.values(index.channels)
+    .flatMap((entry) => entry.versions.map(({ version }) => version)));
+  const launcherNames = await readdir(launcherDir).catch((error) => { if (error.code === "ENOENT") return []; throw error; });
+  const listPath = join(launcherDir, DOKPLOY_LAUNCHER_LIST);
+  const listName = `${launcherPrefix}/${DOKPLOY_LAUNCHER_LIST}`;
+  const listBytes = await readIfPresent(listPath);
+  if (!listBytes) {
+    if (launcherNames.length > 0) errors.push(`${listName} is missing: served launchers must be recorded in the signed launcher list`);
+  } else {
+    if (!(await readIfPresent(`${listPath}.sigstore.json`))) errors.push(`${listName}.sigstore.json is missing`);
+    else bundlesToVerify.push({ file: listPath });
+    let list;
+    try {
+      list = JSON.parse(listBytes.toString("utf8"));
+    } catch {
+      errors.push(`${listName} must be JSON`);
+    }
+    const listErrors = list === undefined ? [] : validateDokployLauncherList(list);
+    errors.push(...listErrors.map((error) => `${listName}: ${error}`));
+    if (list !== undefined && listErrors.length === 0) {
+      const listedNames = new Set();
+      for (const { version, sha256 } of list.launchers) {
+        const name = dokployLauncherName(version);
+        listedNames.add(name);
+        if (!indexedVersions.has(version)) errors.push(`${listName} lists ${version}, which no channel indexes`);
+        const bytes = await readIfPresent(join(launcherDir, name));
+        if (!bytes) {
+          errors.push(`${launcherPrefix}/${name} is listed but missing`);
+          continue;
+        }
+        if (sha256Hex(bytes) !== sha256) {
+          errors.push(`${launcherPrefix}/${name} does not match its listed sha256`);
+          continue;
+        }
+        errors.push(...validateDokployLauncher(bytes, version).map((error) => `${launcherPrefix}/${name} ${error}`));
+      }
+      for (const name of launcherNames) {
+        if (name === DOKPLOY_LAUNCHER_LIST || name === `${DOKPLOY_LAUNCHER_LIST}.sigstore.json`) continue;
+        if (!listedNames.has(name)) errors.push(`${launcherPrefix}/${name} is not in the signed launcher list`);
+      }
+      const oldest = list.launchers.at(-1).version;
+      for (const version of indexedVersions) {
+        if (compareSemver(version, oldest) >= 0 && !listedNames.has(dokployLauncherName(version))) {
+          errors.push(`${listName} does not list ${version}: every indexed version from ${oldest} on serves its launcher`);
+        }
+      }
+    }
   }
 
   if (!(await readIfPresent(join(releasesDir, "index.json.sigstore.json")))) {

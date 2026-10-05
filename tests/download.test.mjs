@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { resolveDownload, startDownload } from '../download.mjs';
+import { latestDesktopVersion, resolveDownload, startDownload } from '../download.mjs';
 
 const query = '?channel=alpha&artifact=dokploy-bootstrap';
 const descriptor = (version = '0.1.0-build.83', channel = 'alpha') => ({
@@ -26,7 +26,7 @@ test('beta resolves only beta and never consumes a metadata URL as a redirect', 
   assert.equal(new URL(result.url).hostname, 'github.com');
 });
 test('invalid query fails without fetching', async () => {
-  for (const search of ['', '?channel=../../private&artifact=dokploy-bootstrap', '?channel=production&artifact=dokploy-bootstrap', '?channel=alpha&artifact=https://example.org']) {
+  for (const search of ['', '?channel=../../private&artifact=dokploy-bootstrap', '?channel=nightly&artifact=dokploy-bootstrap', '?channel=alpha&artifact=https://example.org', '?channel=alpha&artifact=toString', '?channel=beta']) {
     await assert.rejects(resolveDownload(search, () => assert.fail('must not fetch')));
   }
 });
@@ -61,4 +61,54 @@ test('HTTP, network, JSON and timeout failures never navigate; retry can recover
     assert.ok(navigated);
     assert.equal(elements.retry.hidden, true);
   }
+});
+
+const desktopQuery = channel => `?channel=${channel}&artifact=desktop`;
+const entry = version => ({
+  version, sha256: 'a'.repeat(64), url: `https://releases.appsweet.app/desktop/builds/${version}/candidate.json`,
+});
+const catalog = (channel = 'alpha', versions = ['0.1.0-build.37', '0.1.0-build.38']) => ({
+  schemaVersion: 1, channel, entries: versions.map(entry),
+});
+
+test('desktop resolves the newest catalog entry to the fixed public installer for every channel', async () => {
+  for (const channel of ['alpha', 'beta', 'production']) {
+    const result = await resolveDownload(desktopQuery(channel), async (url, options) => {
+      assert.equal(url, `/desktop/channels/${channel}/catalog.json`);
+      assert.equal(options.cache, 'no-store');
+      assert.ok(options.signal instanceof AbortSignal);
+      return { ok: true, status: 200, json: async () => catalog(channel) };
+    });
+    assert.equal(result.version, '0.1.0-build.38');
+    assert.equal(result.url, `https://github.com/Blendable-dev/appsweet-releases/releases/download/desktop-build-v0.1.0-build.38/AppSweet-${channel}-aarch64.dmg`);
+  }
+});
+test('production launcher resolves like the other channels', async () => {
+  const result = await resolveDownload('?channel=production&artifact=dokploy-bootstrap', response(descriptor('0.1.0-build.90', 'production')));
+  assert.equal(result.url, 'https://github.com/Blendable-dev/appsweet-releases/releases/download/backend-v0.1.0-build.90/appsweet-dokploy-bootstrap-0.1.0-build.90.json');
+});
+test('desktop never takes a URL from the catalog and refuses malformed catalogs', async () => {
+  const foreign = { ...catalog(), entries: [{ ...entry('0.1.0-build.38'), url: 'https://example.org/candidate.json' }] };
+  for (const data of [null, {}, foreign, catalog('beta'), { ...catalog(), schemaVersion: 2 }, { ...catalog(), entries: [] },
+    catalog('alpha', ['0.1.0-build.38', '0.1.0-build.37']), catalog('alpha', ['0.1.0-build.38', '0.1.0-build.38']),
+    catalog('alpha', ['0.1.0-build.0']), catalog('alpha', ['..']), { ...catalog(), entries: [{ ...entry('0.1.0-build.38'), sha256: 'x' }] }]) {
+    await assert.rejects(resolveDownload(desktopQuery('alpha'), response(data)), /could not be read/);
+  }
+  assert.equal(latestDesktopVersion(catalog('alpha', ['0.1.0-build.9', '0.2.0-build.1']), 'alpha'), '0.2.0-build.1');
+});
+test('a channel with nothing published says so without a retry or navigation', async () => {
+  for (const search of [desktopQuery('beta'), '?channel=beta&artifact=dokploy-bootstrap']) {
+    const { document, elements } = ui();
+    await startDownload(document, { search, assign() { assert.fail('must not navigate'); } }, async () => ({ ok: false, status: 404 }));
+    assert.match(elements.status.textContent, /^No beta (desktop app|Dokploy launcher) is published yet\.$/);
+    assert.equal(elements.retry.hidden, true);
+    assert.equal(elements.download.hidden, true);
+  }
+});
+test('the page names the artifact it is downloading', async () => {
+  const { document, elements } = ui();
+  elements.title = { textContent: 'Your AppSweet download' };
+  await startDownload(document, { search: desktopQuery('alpha'), assign() {} }, async () => ({ ok: true, status: 200, json: async () => catalog() }));
+  assert.equal(elements.title.textContent, 'Your AppSweet desktop app');
+  assert.match(elements.download.textContent, /alpha 0.1.0-build.38/);
 });

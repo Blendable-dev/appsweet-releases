@@ -4,9 +4,15 @@ Static release-channel metadata and update artifacts for AppSweet, served at
 https://releases.appsweet.app via GitHub Pages.
 
 - `download.html?channel=alpha&artifact=dokploy-bootstrap` — automatically download the current
-  alpha Dokploy launcher; use `channel=beta` for beta once published. A fallback button links to
-  the resolved immutable asset, and the page links to other versions. This is browser navigation,
-  not signature verification; installation retains its release-verification checks.
+  alpha Dokploy launcher; use `channel=beta` or `channel=production` once published. A fallback
+  button links to the resolved immutable asset, and the page links to other versions. This is
+  browser navigation, not signature verification; installation retains its release-verification
+  checks.
+- `download.html?channel=alpha&artifact=desktop` — automatically download the newest desktop app in
+  the channel's catalog (`desktop/channels/<channel>/catalog.json`) from its public installer
+  `desktop-build-v<version>/AppSweet-<channel>-aarch64.dmg`; also for `beta` and `production`. A
+  channel with nothing published says so instead of offering a retry. macOS checks the Developer ID
+  signature and notarization when the app is installed.
 - `install.sh` — the one-line self-host installer
 - `releases/beta.json` (+ `.sigstore.json`) — backend beta channel: the latest release, consumed by
   the self-host installer; always a byte-copy of that version's per-version manifest

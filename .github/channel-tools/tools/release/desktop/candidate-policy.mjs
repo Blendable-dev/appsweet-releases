@@ -9,6 +9,15 @@ export const installerRepository = "https://github.com/Blendable-dev/local-app-s
 export function installerUrl(version, channel) {
   return `${installerRepository}/releases/download/desktop-build-v${version}/AppSweet-${channel}-aarch64.dmg`;
 }
+// Signed candidates keep the private installer URL above: installed desktops (build.36 onwards)
+// accept no other. The anonymous copy of the same bytes lives in the public release repository at a
+// URL derived only from the authenticated version and channel (OpenSpec public-latest-desktop-download D1).
+export const publicInstallerRepository = "Blendable-dev/appsweet-releases";
+export function publicInstallerUrl(version, channel) {
+  parseCandidateVersion(version);
+  requireValue(variants.includes(channel), "invalid installer channel");
+  return `https://github.com/${publicInstallerRepository}/releases/download/desktop-build-v${version}/AppSweet-${channel}-aarch64.dmg`;
+}
 const variants = ["alpha", "beta", "production"];
 const integer = /^(0|[1-9]\d*)$/;
 const digest = /^[a-f0-9]{64}$/;

@@ -13,6 +13,24 @@ async function loadSchema(name) {
 }
 const buildSchema = await loadSchema("build.schema.json");
 
+// Inlined from tools/release/desktop/candidate-policy.mjs `publicInstallerUrl`: the signed backend
+// archive ships this verifier with build-identity.mjs only (release-assets.mjs). A test keeps both equal.
+const DESKTOP_BUILD_VERSION = /^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)-build\.[1-9][0-9]*$/;
+export function publicDesktopInstallerUrl(version, channel) {
+  return `https://github.com/Blendable-dev/appsweet-releases/releases/download/desktop-build-v${version}/AppSweet-${channel}-aarch64.dmg`;
+}
+/**
+ * The installer-pin rule every release contract shares (OpenSpec public-latest-desktop-download D7):
+ * a pin naming a candidate build must be that build's exact anonymous public installer for its
+ * channel. Legacy non-build pins (`0.1.0-beta.1`) keep the generic immutable-URL rule.
+ */
+export function publicDesktopPinProblem(pin, channel) {
+  if (!DESKTOP_BUILD_VERSION.test(pin?.version ?? "")) return null;
+  if (!["alpha", "beta", "production"].includes(channel)) return `invalid desktop pin channel ${channel}`;
+  return pin.downloadUrl === publicDesktopInstallerUrl(pin.version, channel) ? null
+    : `${channel} desktop pin ${pin.version} must use its public installer URL ${publicDesktopInstallerUrl(pin.version, channel)}`;
+}
+
 const supportedSchemaKeywords = new Set([
   "$defs",
   "$id",
@@ -327,6 +345,11 @@ export function validateReleaseManifest(value) {
     ) {
       errors.push(
         "installable build requires immutable Apple Silicon desktop release metadata",
+      );
+    } else if (publicDesktopPinProblem(desktop, "beta")) {
+      // The manifest's desktop is the beta pin.
+      errors.push(
+        "a build-version desktop pin must use its public installer URL",
       );
     }
     for (const name of [

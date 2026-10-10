@@ -1,0 +1,112 @@
+{
+  "services": {
+    "bootstrap-init": {
+      "image": "ghcr.io/blendable-dev/appsweet-backend:0.1.0-build.115@sha256:1f2579d7bd72651aca0c68fad568cf7adbeabf1d6fa33d7d526671ce3b88889d",
+      "read_only": true,
+      "cap_drop": [
+        "ALL"
+      ],
+      "security_opt": [
+        "no-new-privileges:true"
+      ],
+      "tmpfs": [
+        "/tmp:rw,noexec,nosuid,nodev"
+      ],
+      "labels": {
+        "dev.appsweet.bootstrap": "dokploy-v1"
+      },
+      "user": "0:0",
+      "network_mode": "none",
+      "restart": "no",
+      "cap_add": [
+        "CHOWN",
+        "SETUID",
+        "SETGID",
+        "DAC_READ_SEARCH"
+      ],
+      "environment": {
+        "APPSWEET_BACKEND_PROCESS_MODE": "dokploy-bootstrap-init",
+        "APPSWEET_RELEASE_VERSION": "0.1.0-build.115",
+        "APPSWEET_BACKEND_IMAGE": "ghcr.io/blendable-dev/appsweet-backend:0.1.0-build.115@sha256:1f2579d7bd72651aca0c68fad568cf7adbeabf1d6fa33d7d526671ce3b88889d",
+        "APPSWEET_CONSOLE_HOSTNAME": "${APPSWEET_CONSOLE_HOSTNAME:?Set APPSWEET_CONSOLE_HOSTNAME in Dokploy Environment}",
+        "APPSWEET_DOKPLOY_SERVICE_URL": "${APPSWEET_DOKPLOY_SERVICE_URL:?Set APPSWEET_DOKPLOY_SERVICE_URL in Dokploy Environment}",
+        "APPSWEET_PLATFORM_NETWORK": "${APPSWEET_PLATFORM_NETWORK:-dokploy-network}",
+        "APPSWEET_UPDATE_CHANNEL": "${APPSWEET_UPDATE_CHANNEL:-alpha}",
+        "APPSWEET_INSTALLATION_KEY": "${APPSWEET_INSTALLATION_KEY:?Set APPSWEET_INSTALLATION_KEY in Dokploy Environment}",
+        "APPSWEET_DOKPLOY_API_KEY": "${APPSWEET_DOKPLOY_API_KEY:?Set APPSWEET_DOKPLOY_API_KEY in Dokploy Environment}"
+      },
+      "volumes": [
+        "appsweet-bootstrap-state:/appsweet/bootstrap"
+      ]
+    },
+    "bootstrap": {
+      "image": "ghcr.io/blendable-dev/appsweet-backend:0.1.0-build.115@sha256:1f2579d7bd72651aca0c68fad568cf7adbeabf1d6fa33d7d526671ce3b88889d",
+      "read_only": true,
+      "cap_drop": [
+        "ALL"
+      ],
+      "security_opt": [
+        "no-new-privileges:true"
+      ],
+      "tmpfs": [
+        "/tmp:rw,noexec,nosuid,nodev"
+      ],
+      "labels": [
+        "dev.appsweet.bootstrap=dokploy-v1",
+        "traefik.enable=true",
+        "traefik.docker.network=${APPSWEET_PLATFORM_NETWORK:-dokploy-network}",
+        "traefik.http.routers.appsweet-bootstrap-${COMPOSE_PROJECT_NAME}.rule=Host(`${APPSWEET_CONSOLE_HOSTNAME}`)",
+        "traefik.http.routers.appsweet-bootstrap-${COMPOSE_PROJECT_NAME}.entrypoints=websecure",
+        "traefik.http.routers.appsweet-bootstrap-${COMPOSE_PROJECT_NAME}.tls.certresolver=letsencrypt",
+        "traefik.http.services.appsweet-bootstrap-${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=3002"
+      ],
+      "user": "65532:65532",
+      "restart": "unless-stopped",
+      "environment": {
+        "APPSWEET_BACKEND_PROCESS_MODE": "dokploy-bootstrap",
+        "APPSWEET_RELEASE_VERSION": "0.1.0-build.115",
+        "APPSWEET_BACKEND_IMAGE": "ghcr.io/blendable-dev/appsweet-backend:0.1.0-build.115@sha256:1f2579d7bd72651aca0c68fad568cf7adbeabf1d6fa33d7d526671ce3b88889d",
+        "APPSWEET_CONSOLE_HOSTNAME": "${APPSWEET_CONSOLE_HOSTNAME:?Set APPSWEET_CONSOLE_HOSTNAME in Dokploy Environment}",
+        "APPSWEET_DOKPLOY_SERVICE_URL": "${APPSWEET_DOKPLOY_SERVICE_URL:?Set APPSWEET_DOKPLOY_SERVICE_URL in Dokploy Environment}",
+        "APPSWEET_PLATFORM_NETWORK": "${APPSWEET_PLATFORM_NETWORK:-dokploy-network}",
+        "APPSWEET_UPDATE_CHANNEL": "${APPSWEET_UPDATE_CHANNEL:-alpha}"
+      },
+      "volumes": [
+        "appsweet-bootstrap-state:/appsweet/bootstrap"
+      ],
+      "networks": [
+        "platform"
+      ],
+      "depends_on": {
+        "bootstrap-init": {
+          "condition": "service_completed_successfully"
+        }
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "env",
+          "APPSWEET_BACKEND_PROCESS_MODE=dokploy-bootstrap-health",
+          "/usr/local/bin/appsweet-backend"
+        ],
+        "interval": "5s",
+        "timeout": "3s",
+        "retries": 12,
+        "start_period": "5s"
+      }
+    }
+  },
+  "volumes": {
+    "appsweet-bootstrap-state": {
+      "labels": {
+        "dev.appsweet.bootstrap": "dokploy-v1"
+      }
+    }
+  },
+  "networks": {
+    "platform": {
+      "external": true,
+      "name": "${APPSWEET_PLATFORM_NETWORK:-dokploy-network}"
+    }
+  }
+}

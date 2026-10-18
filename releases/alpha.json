@@ -1,14 +1,14 @@
 {
   "schemaVersion": 2,
   "channel": "alpha",
-  "version": "0.1.0-build.115",
-  "tag": "backend-v0.1.0-build.115",
-  "publishedAt": "2026-10-10T10:40:35Z",
+  "version": "0.1.0-build.117",
+  "tag": "backend-v0.1.0-build.117",
+  "publishedAt": "2026-10-18T19:28:31Z",
   "releaseReadiness": "self-host-candidate",
-  "deploymentDefinitionSha256": "8033cf6afa9e59f3a9820229b925aacc10820bd0d0b902ce50587fb950ac929e",
+  "deploymentDefinitionSha256": "bb51e1863d2aa777687f235dc02e1b018e9f53cc0ad89f1ccdaf5c20e38a5476",
   "releaseManifest": {
-    "url": "https://github.com/Blendable-dev/appsweet-releases/releases/download/backend-v0.1.0-build.115/release.json",
-    "sha256": "0b3f82a0f8e41be0d43487d3b8a2d26a47e630a5b0d848b9f0e43fa6bcf38348"
+    "url": "https://github.com/Blendable-dev/appsweet-releases/releases/download/backend-v0.1.0-build.117/release.json",
+    "sha256": "506b104198cef28527bea2203ffda3840aa2352cb01861c5c83d0b47ac4c6aa3"
   },
   "signingKeyId": "sha256:1552d0983f559e84edc86c113f1e472ba90ed11a77004531387aa1b39ed69a61",
   "revocations": {

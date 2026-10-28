@@ -182,8 +182,10 @@ export function desktopReleaseInput(path) {
     && !path.includes("\\") && !path.split("/").some((p) => ["", ".", ".."].includes(p)), "invalid repository path");
   if (/\.(test|spec)\.[cm]?[jt]sx?$/.test(path) || /_tests?\.rs$/.test(path)
     || /(^|\/)(README|AGENTS|CHANGELOG)\.md$/i.test(path) || /\/(tests|__tests__|fixtures|e2e|\.artifacts)\//.test(path)) return false;
-  // tools/sweetheart-local-host/ is the separately locked mistral.rs adapter bundled into every variant.
-  return ["clients/apps/desktop/", "clients/shared/", "shared-rs/", "tools/release/desktop/", "tools/sweetheart-local-host/"].some((p) => path.startsWith(p))
+  // tools/sweetheart-local-host/ is the separately locked mistral.rs adapter and speech worker bundled
+  // into every variant; tools/release/notices/ holds the vendored notices of their native libraries.
+  return ["clients/apps/desktop/", "clients/shared/", "shared-rs/", "tools/release/desktop/", "tools/release/notices/",
+    "tools/sweetheart-local-host/"].some((p) => path.startsWith(p))
     || /^\.github\/workflows\/desktop-/.test(path)
     || /^tools\/(build-mac-app|release\/desktop-release-contract)/.test(path)
     || ["Cargo.toml", "Cargo.lock", "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", ".npmrc", "rust-toolchain.toml",

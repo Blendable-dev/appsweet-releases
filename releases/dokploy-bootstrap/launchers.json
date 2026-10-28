@@ -2,6 +2,10 @@
   "schemaVersion": 1,
   "launchers": [
     {
+      "version": "0.1.0-build.119",
+      "sha256": "6fcf364331ab0ecaf2cf353ea44fbcb3e02ccbd9061c0f4a2a013d542b8656b8"
+    },
+    {
       "version": "0.1.0-build.118",
       "sha256": "8fb80977a2f7c085c3bff0126d3a78e4ab9a2efce54532b6c1b31f4fef2a087f"
     },

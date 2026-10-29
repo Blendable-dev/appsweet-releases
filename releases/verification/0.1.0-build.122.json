@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "version": "0.1.0-build.122",
+  "commitSha": "9a4f4ad3c1eab61414abd67131310442a82bb489",
+  "releaseManifestSha256": "0ada0a4e8ab5d7bb825b9798b81aa0ea1e993b0d8a5b76c3dc649d8de36e80cf",
+  "signingKeyId": "sha256:1552d0983f559e84edc86c113f1e472ba90ed11a77004531387aa1b39ed69a61",
+  "buildWorkflow": {
+    "identity": "https://github.com/Blendable-dev/local-app-sweet/.github/workflows/backend-alpha.yml@refs/heads/main",
+    "runId": "40877578887",
+    "runNumber": 122,
+    "url": "https://github.com/Blendable-dev/local-app-sweet/actions/runs/40877578887"
+  },
+  "checks": {
+    "releaseContracts": "passed",
+    "initializerCapability": "passed",
+    "anonymousAssets": "passed",
+    "anonymousImages": "passed",
+    "signaturesAndInventory": "passed"
+  },
+  "scope": "publication-verification",
+  "liveAcceptance": "not-recorded"
+}
